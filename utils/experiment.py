@@ -17,7 +17,7 @@ def cell_segmentation(positive_images_root, negative_images_root, positive_npy_r
     if 1- os.path.exists(negative_npy_root+str(intensity)+'/'):
         os.makedirs(negative_npy_root+str(intensity)+'/')
 
-    if (multi_core == True):
+    if (multi_core == True and __name__ == '__main__'):
         jobs = []
         for index, i in enumerate(positive_images_path):
             p = multiprocessing.Process(target=cell_segment, args=(i, positive_npy_root+str(intensity)+'/',

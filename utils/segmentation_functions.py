@@ -10,6 +10,7 @@ import skimage.color
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from PIL import Image
+import ctypes
 plt.rcParams['figure.figsize'] = 15, 15
 plt.rcParams['image.cmap'] = 'gray'
 titlesize = 24
@@ -213,10 +214,19 @@ def cell_segment(image_path, data_saved_path, ref_path, intensity):
     imLog = htk.filters.shape.clog(imNucleiStain, imFgndMask,
                                    sigma_min=min_radius * np.sqrt(2),
                                    sigma_max=max_radius * np.sqrt(2))
+    
     # detect and segment nuclei using local maximum clustering
     local_max_search_radius = 10
+    imLog[0].dtype = 'double'
+    def f(x):
+        return ctypes.c_long(x).value
+    f2 = np.vectorize(f)
+ 
+    for row in range(len(imFgndMask)):
+        for elem in range(len(imFgndMask[0])):
+            imFgndMask[row, elem] = ctypes.c_long(imFgndMask[row,elem])
     imNucleiSegMask1, Seeds, Max = htk.segmentation.nuclear.max_clustering(
-        imLog[0], imFgndMask, local_max_search_radius)
+        imLog[0].astype(np.double), np.int_(imFgndMask), np.int_(local_max_search_radius))
     # filter out small objects
     min_nucleus_area = 200
     imNucleiSegMask = htk.segmentation.label.area_open(

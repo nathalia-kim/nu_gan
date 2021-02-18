@@ -1,5 +1,5 @@
 import os
-from sklearn.datasets import fetch_mldata
+from sklearn.datasets import fetch_openml
 import random
 import torch
 import torch.backends.cudnn as cudnn
@@ -69,7 +69,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
     end = time.time()
     for i, (input, target) in enumerate(train_loader):
-        target_var = Variable(target.cuda(async=True))
+        target_var = Variable(target.cuda(non_blocking=True))
         input_var = Variable(input.cuda())
 
         # compute output
@@ -112,7 +112,7 @@ def validate(val_loader, model, criterion, epoch):
     predict = []
     end = time.time()
     for i, (input, target) in enumerate(val_loader):
-        target_var = Variable(target.cuda(async=True))#label
+        target_var = Variable(target.cuda(non_blocking=True))#label
         input_var = Variable(input.cuda())
 
         # compute output

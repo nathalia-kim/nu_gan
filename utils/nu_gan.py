@@ -1,19 +1,21 @@
 import os
 import time
 import argparse
-from utils.experiment import cell_segmentation, cell_representation, image_classification
+import experiment
+from experiment import cell_segmentation, cell_representation, image_classification
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--task', 
                     choices = ['cell_representation', 'image_classification', 'cell_segmentation'], 
                     help='cell_representation | image_classification | cell_segmentation')
 opt = parser.parse_args()
+opt.task = 'cell_segmentation'
 
 if not (opt.task):
     parser.error("specific a task such as '--task cell_representation'")
 
 #for image classification and nuclei segmentation
-experiment_root = './experiment/'
+experiment_root = 'C:/Users/Kim/experiment/'
 positive_images_root= experiment_root + 'data/original/positive_images/' 
 negative_images_root= experiment_root + 'data/original/negative_images/' 
 positive_npy_root = experiment_root + 'data/segmented/positive_npy/'
