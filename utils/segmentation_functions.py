@@ -217,16 +217,9 @@ def cell_segment(image_path, data_saved_path, ref_path, intensity):
     
     # detect and segment nuclei using local maximum clustering
     local_max_search_radius = 10
-    imLog[0].dtype = 'double'
-    def f(x):
-        return ctypes.c_long(x).value
-    f2 = np.vectorize(f)
  
-    for row in range(len(imFgndMask)):
-        for elem in range(len(imFgndMask[0])):
-            imFgndMask[row, elem] = ctypes.c_long(imFgndMask[row,elem])
     imNucleiSegMask1, Seeds, Max = htk.segmentation.nuclear.max_clustering(
-        imLog[0].astype(np.double), np.int_(imFgndMask), np.int_(local_max_search_radius))
+        imLog[0], imFgndMask, local_max_search_radius)
     # filter out small objects
     min_nucleus_area = 200
     imNucleiSegMask = htk.segmentation.label.area_open(
@@ -314,14 +307,15 @@ def cell_segment(image_path, data_saved_path, ref_path, intensity):
         if max(height,width)>32:
             scale = 32/float(max(height,width))
             height, width = int(height*scale), int(width*scale)
-            img = sp.misc.imresize(img, (height, width))
+            #img = sp.misc.imresize(img, (height, width))
+            img = np.array(Image.fromarray(img).resize((width, height)))
 
-        npad = ((16-height/2,32-height-(16-height/2)),(16-width/2,32-width-(16-width/2)),(0,0))
+        npad = ((int(16-height/2),int(32-height-(16-height/2))),(int(16-width/2),int(32-width-(16-width/2))),(0,0))
         segmentate_image = np.pad(img, pad_width=npad,constant_values=255,mode='constant')
         image_dict[n] = segmentate_image
         n+=1
 
-    image = np.array(image_dict.values())
+    image = np.array(list(image_dict.values()))
     np.save(((data_saved_path + name)+'.npy'), image)
     print ('Number of nuclei = ', len(image_dict))
     print ('image saved')

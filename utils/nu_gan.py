@@ -15,7 +15,8 @@ if not (opt.task):
     parser.error("specific a task such as '--task cell_representation'")
 
 #for image classification and nuclei segmentation
-experiment_root = 'C:/Users/Kim/experiment/'
+#experiment_root = 'C:/Users/Kim/experiment/'
+experiment_root = '/Users/kim/experiment/'
 positive_images_root= experiment_root + 'data/original/positive_images/' 
 negative_images_root= experiment_root + 'data/original/negative_images/' 
 positive_npy_root = experiment_root + 'data/segmented/positive_npy/'
