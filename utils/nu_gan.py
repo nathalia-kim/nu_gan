@@ -9,7 +9,7 @@ parser.add_argument('--task',
                     choices = ['cell_representation', 'image_classification', 'cell_segmentation'], 
                     help='cell_representation | image_classification | cell_segmentation')
 opt = parser.parse_args()
-opt.task = 'cell_segmentation'
+opt.task = 'cell_representation'
 
 if not (opt.task):
     parser.error("specific a task such as '--task cell_representation'")
@@ -29,7 +29,7 @@ X_test_path = experiment_root + 'data/cell_level_label/X_test.npy'
 y_train_path = experiment_root + 'data/cell_level_label/y_train.npy' 
 y_test_path = experiment_root + 'data/cell_level_label/y_test.npy' 
 
-n_epoch=50
+n_epoch=10
 batchsize=10
 rand=32
 dis=1
@@ -41,6 +41,7 @@ random_seed = 42
 save_model_steps=100
 intensity = 160 #segmentation intensity
 multi_process = True #multi core process for nuclei segmentation
+cuda_enabled = False
 
 fold = 4
 choosing_fold = 1 #cross-validation for classification

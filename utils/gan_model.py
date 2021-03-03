@@ -44,6 +44,7 @@ class ResidualBlock(nn.Module):
             self.bn1 = nn.BatchNorm2d(in_dim)
             self.conv1 = nn.Conv2d(in_dim, out_dim, 3, 1, 1, bias=True)
             self.upsample = torch.nn.Upsample(up_size,2)
+            self.upsample = torch.nn.Upsample(scale_factor=2)
             self.upsample_conv = nn.Conv2d(in_dim, out_dim, 1, 1, 0, bias=True)
             self.conv2 = nn.Conv2d(out_dim, out_dim, 3, 1, 1, bias=True)
             self.bn2 = nn.BatchNorm2d(out_dim)
@@ -135,7 +136,7 @@ class generator(nn.Module):
         super(generator, self).__init__()
         self.rand = rand
         self.linear = nn.Linear(rand  ,2048, bias=True)
-        self.layer_up_1 = ResidualBlock(128, 128, 'up', up_size=8)
+        self.layer_up_1 = ResidualBlock(128, 128, 'up', up_size=8)  
         self.layer_up_2 = ResidualBlock(128, 128, 'up', up_size=16)
         self.layer_up_3 = ResidualBlock(128, 128, 'up', up_size=32)
         self.bn1 = nn.BatchNorm2d(128)
@@ -230,14 +231,14 @@ def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
         weight = torch.from_numpy(initialize_conv(m))
-        m.weight.data.copy_(weight,broadcast=False)
+        m.weight.data.copy_ = weight
         m.bias.data.fill_(0)
     elif classname.find('BatchNorm') != -1:
         m.weight.data.normal_(1.0, 0.02)
         m.bias.data.fill_(0)
     elif classname.find('Linear') != -1:
         weight_values = torch.from_numpy(initialize_linear(m))
-        m.weight.data.copy_(weight_values,broadcast=False)
+        m.weight.data.copy_ = weight_values
         m.bias.data.fill_(0)
         
 #sample from categorical distribution
@@ -267,10 +268,9 @@ def fix_noise(dis=1, rand=128, dis_category=5, row=10):
 def calc_gradient_penalty(netD_D, netD, real_data, fake_data,lamda,batch_size):
     alpha = torch.rand(batch_size,1,1,1)
     alpha = alpha.expand(real_data.size())
-    alpha = alpha.cuda()
 
     interpolates = alpha * real_data + ((1 - alpha) * fake_data)
-    interpolates = interpolates.cuda()
+    
     interpolates = Variable(interpolates, requires_grad=True)
 
     disc_interpolates = netD_D(netD(interpolates))#.view(batch_size,-1)
@@ -286,7 +286,7 @@ def get_matrix(netD, netD_Q, cluster_loader, label, dis_category):
     data_iter = iter(cluster_loader)
     for iteration in data_iter:
         img, img_label = iteration
-        predict_label = netD_Q(netD(Variable(img.cuda(),volatile=True)))
+        predict_label = netD_Q(netD(Variable(img)))
         predict.append(predict_label.data.cpu().numpy())    
     predict = np.concatenate(predict)
     predict_label = []
@@ -308,6 +308,7 @@ def shuffle(array):
     X = X[p]
     return X
 
+# get augmented rotated images from image array
 def rotation(array):
     result_list = [array] 
     seq = iaa.Sequential([
@@ -340,7 +341,7 @@ def create_model(rand=32, dis_category=5, dis=1):
     netD.apply(weights_init)
     netD_Q.apply(weights_init)
     netD_D.apply(weights_init)
-    netD, netG, netD_D, netD_Q = netD.cuda(), netG.cuda(), netD_D.cuda(), netD_Q.cuda()
+    #netD, netG, netD_D, netD_Q = netD.cuda(), netG.cuda(), netD_D.cuda(), netD_Q.cuda()
     return netD, netG, netD_D, netD_Q
 
 def compute_purity_entropy(coherent_array):
@@ -464,7 +465,7 @@ def get_catagory_matrix(loader , netD, netD_Q, dis_category):
     test_iter = iter(loader)
     feature_dict = [0] * dis_category
     for cluser_counting,data in enumerate(test_iter):
-        category = netD_Q(netD(Variable(data[0].cuda(), volatile = True))).data.cpu().numpy()
+        category = netD_Q(netD(Variable(data[0]))).data.cpu().numpy()
         for i in category:
             feature_dict[np.argmax(i)] +=1
     return feature_dict
@@ -535,21 +536,21 @@ def train(cell_train_set, cell_test_set, cell_test_label,
     criterion_logli = nn.NLLLoss()
     criterion_mse = nn.MSELoss()
 
-    criterion, criterion_logli, criterion_mse = criterion.cuda(), criterion_logli.cuda(), criterion_mse.cuda()
-    input, label = input.cuda(), label.cuda()
-    noise, fixed_noise = noise.cuda(), fixed_noise.cuda()
-    z, c = z.cuda(), c.cuda()
+    #criterion, criterion_logli, criterion_mse = criterion.cuda(), criterion_logli.cuda(), criterion_mse.cuda()
+    #input, label = input.cuda(), label.cuda()
+    #noise, fixed_noise = noise.cuda(), fixed_noise.cuda()
+    #z, c = z.cuda(), c.cuda()
 
     gen_iterations = 0
     lamda = 10
     discrete_lamda = 1
     end = time.time()
 
-    one = torch.FloatTensor([1])
-    mone = one * -1
-    one = one.cuda()
-    mone = mone.cuda()
-    fixed_noise = torch.from_numpy(fix_noise(dis_category=dis_category,rand=rand)).cuda()
+    one = torch.tensor(1.0)
+    mone = torch.tensor(-1.0)
+    #one = one.cuda()
+    #mone = mone.cuda()
+    fixed_noise = torch.from_numpy(fix_noise(dis_category=dis_category,rand=rand))
 
     for epoch in range(n_epoch):
 
@@ -570,7 +571,7 @@ def train(cell_train_set, cell_test_set, cell_test_label,
                 zero_grad()
                 image_, _ = dataiter.next()
                 _batchsize = image_.size(0)
-                image_ = image_.cuda()
+                #image_ = image_.cuda()
                 i +=1
                 input.resize_as_(image_).copy_(image_)
                 inputv = Variable(input)
@@ -581,13 +582,13 @@ def train(cell_train_set, cell_test_set, cell_test_label,
 
                 # train with fake
                 rand_c,label_c = sample_c(_batchsize,dis_category=dis_category)
-                rand_c = rand_c.cuda()
+                #rand_c = rand_c.cuda()
                 c.resize_as_(rand_c).copy_(rand_c)
                 z.resize_(_batchsize, rand, 1, 1).normal_(0, 1)
                 c = c.view(-1, dis_category, 1, 1)
                 noise = torch.cat([c,z],1)
                 noise_resize = noise.view(_batchsize,rand+dis_category*dis,1,1)
-                noisev = Variable(noise_resize, volatile = True)
+                noisev = Variable(noise_resize)
                 fake = Variable(netG(noisev).data)
                 inputv = fake
                 errD_fake = netD_D(netD(inputv)).mean()
@@ -609,7 +610,7 @@ def train(cell_train_set, cell_test_set, cell_test_label,
 
             zero_grad()
             rand_c,label_c = sample_c(batchsize,dis_category=dis_category)
-            rand_c = rand_c.cuda()
+            #rand_c = rand_c.cuda()
             c.resize_as_(rand_c).copy_(rand_c)
             z.resize_(batchsize, rand, 1, 1).normal_(0, 1)
             c = c.view(-1, dis_category, 1, 1)
@@ -629,7 +630,7 @@ def train(cell_train_set, cell_test_set, cell_test_label,
             zero_grad()
             inputv = Variable(noise_resize)
             Q_c_given_x = netD_Q(netD(netG(inputv))).view(batchsize, dis_category)
-            crossent_loss = criterion_logli(Q_c_given_x ,Variable(label_c.cuda()))
+            crossent_loss = criterion_logli(Q_c_given_x ,Variable(label_c))
             mi_loss = discrete_lamda*crossent_loss
             mi_loss.backward()
 
@@ -646,7 +647,7 @@ def train(cell_train_set, cell_test_set, cell_test_label,
                                                                                            gen_iterations , -D_cost.data[0] , mi_loss.data[0])+ '\n')
                      
             if gen_iterations % 100 == 0 :
-                G_sample = netG(Variable(fixed_noise, volatile = True))
+                G_sample = netG(Variable(fixed_noise))
                 vutils.save_image(G_sample.data, experiment_root+'picture/fake_cell.png', nrow=5,normalize=True)
                 coherent_array = get_matrix(netD, netD_Q, test_loader, cell_test_label, dis_category)
                 entropy, purity = compute_purity_entropy(coherent_array)
@@ -679,7 +680,8 @@ def train(cell_train_set, cell_test_set, cell_test_label,
 def train_representation(cell_array, test_array, test_label, netD, netG, netD_D, netD_Q,
                          experiment_root, n_epoch=50, batchsize=32, rand=64, dis=1, dis_category=5, 
                          ld = 1e-4, lg = 1e-4, lq = 1e-4, save_model_steps=100):
-
+    
+    # get augmented rotated images
     train = rotation(cell_array)
     train = normalized(train)
     train_loader = create_loader(train, shuffle=True, batchsize=batchsize)
@@ -728,21 +730,22 @@ def train_representation(cell_array, test_array, test_label, netD, netG, netD_D,
     criterion_logli = nn.NLLLoss()
     criterion_mse = nn.MSELoss()
 
-    criterion, criterion_logli, criterion_mse = criterion.cuda(), criterion_logli.cuda(), criterion_mse.cuda()
-    input, label = input.cuda(), label.cuda()
-    noise, fixed_noise = noise.cuda(), fixed_noise.cuda()
-    z, c = z.cuda(), c.cuda()
+    #criterion, criterion_logli, criterion_mse = criterion.cuda(), criterion_logli.cuda(), criterion_mse.cuda()
+    #input, label = input.cuda(), label.cuda()
+    #noise, fixed_noise = noise.cuda(), fixed_noise.cuda()
+    #z, c = z.cuda(), c.cuda()
 
     gen_iterations = 0
     lamda = 10
     discrete_lamda = 1
     end = time.time()
 
-    one = torch.FloatTensor([1])
-    mone = one * -1
-    one = one.cuda()
-    mone = mone.cuda()
-    fixed_noise = torch.from_numpy(fix_noise(dis_category=dis_category,rand=rand)).cuda()
+    #one = torch.FloatTensor([1])
+    one = torch.tensor(1.0)
+    mone = torch.tensor(-1.0)
+    #one = one.cuda()
+    #mone = mone.cuda()
+    fixed_noise = torch.from_numpy(fix_noise(dis_category=dis_category,rand=rand))
 
     for epoch in range(n_epoch):
 
@@ -763,9 +766,10 @@ def train_representation(cell_array, test_array, test_label, netD, netG, netD_D,
                 zero_grad()
                 image_, _ = dataiter.next()
                 _batchsize = image_.size(0)
-                image_ = image_.cuda()
+                #image_ = image_.cuda()
                 i +=1
                 input.resize_as_(image_).copy_(image_)
+                # batch of input images
                 inputv = Variable(input)
 
                 #train with real
@@ -774,13 +778,13 @@ def train_representation(cell_array, test_array, test_label, netD, netG, netD_D,
 
                 # train with fake
                 rand_c,label_c = sample_c(_batchsize,dis_category=dis_category)
-                rand_c = rand_c.cuda()
+                #rand_c = rand_c.cuda()
                 c.resize_as_(rand_c).copy_(rand_c)
                 z.resize_(_batchsize, rand, 1, 1).normal_(0, 1)
                 c = c.view(-1, dis_category, 1, 1)
                 noise = torch.cat([c,z],1)
                 noise_resize = noise.view(_batchsize,rand+dis_category*dis,1,1)
-                noisev = Variable(noise_resize, volatile = True)
+                noisev = Variable(noise_resize, requires_grad=True)
                 fake = Variable(netG(noisev).data)
                 inputv = fake
                 errD_fake = netD_D(netD(inputv)).mean()
@@ -802,7 +806,7 @@ def train_representation(cell_array, test_array, test_label, netD, netG, netD_D,
 
             zero_grad()
             rand_c,label_c = sample_c(batchsize,dis_category=dis_category)
-            rand_c = rand_c.cuda()
+            #rand_c = rand_c.cuda()
             c.resize_as_(rand_c).copy_(rand_c)
             z.resize_(batchsize, rand, 1, 1).normal_(0, 1)
             c = c.view(-1, dis_category, 1, 1)
@@ -822,7 +826,7 @@ def train_representation(cell_array, test_array, test_label, netD, netG, netD_D,
             zero_grad()
             inputv = Variable(noise_resize)
             Q_c_given_x = netD_Q(netD(netG(inputv))).view(batchsize, dis_category)
-            crossent_loss = criterion_logli(Q_c_given_x ,Variable(label_c.cuda()))
+            crossent_loss = criterion_logli(Q_c_given_x ,Variable(label_c))
             mi_loss = discrete_lamda*crossent_loss
             mi_loss.backward()
 
@@ -834,14 +838,14 @@ def train_representation(cell_array, test_array, test_label, netD, netG, netD_D,
                 end = time.time()
 
                 with open(experiment_root + "log","a") as f:
-                    f.write('batch_time:{0}, gen_iterations:{1}, D_cost:{2}, mi_loss:{3}'.format(batch_time/10, gen_iterations , -D_cost.data[0] , mi_loss.data[0]) + '\n')
-                print('batch_time:{0}, gen_iterations:{1}, D_cost:{2}, mi_loss:{3}'.format(batch_time/10, gen_iterations , -D_cost.data[0] , mi_loss.data[0]))
+                    f.write('batch_time:{0}, gen_iterations:{1}, D_cost:{2}, mi_loss:{3}'.format(batch_time/10, gen_iterations , -D_cost.data , mi_loss.data) + '\n')
+                print('batch_time:{0}, gen_iterations:{1}, D_cost:{2}, mi_loss:{3}'.format(batch_time/10, gen_iterations , -D_cost.data , mi_loss.data))
 
 
             if gen_iterations % 100 == 0 :
 
                 #print ('{0} {1} {2} {3}'.format(batch_time, gen_iterations , -D_cost.data[0] , mi_loss.data[0]))
-                G_sample = netG(Variable(fixed_noise, volatile = True))
+                G_sample = netG(Variable(fixed_noise))
                 vutils.save_image(G_sample.data, experiment_root+'picture/fake_cell.png',nrow=5,normalize=True)
 
                 coherent_array = get_matrix(netD, netD_Q, test_loader, test_label, dis_category)

@@ -173,7 +173,7 @@ def cell_segment_evaluate(intensity, refImageFile, segmenval_original_path, segm
 
 
 def cell_segment(image_path, data_saved_path, ref_path, intensity):
-    totallabel  =0
+    totallabel = 0
     totalsegment  = 0
     totalright  = 0
 
@@ -183,29 +183,38 @@ def cell_segment(image_path, data_saved_path, ref_path, intensity):
 
     classification1 = []
     totalseg = []
+    
+    # get image id / name 
     name = image_path.split('/')[-1].split('/')[-1].split('.')[0]
+    
+    # read current image 
     inputImageFile = image_path
     imInput = skimage.io.imread(inputImageFile)[:, :, :3]
+    
+    # read reference image 
     refImageFile = ref_path
     imReference = skimage.io.imread(refImageFile)[:, :, :3]
+    
     # get mean and stddev of reference image in lab space
     meanRef, stdRef = htk.preprocessing.color_conversion.lab_mean_std(imReference)
+    
     # perform reinhard color normalization
     imNmzd = htk.preprocessing.color_normalization.reinhard(imInput, meanRef, stdRef)
 
-    w_est = htk.preprocessing.color_deconvolution.rgb_separate_stains_macenko_pca(imNmzd,I_0=255 )
-    I_0=255
+    # Perform color deconvolution
+    w_est = htk.preprocessing.color_deconvolution.rgb_separate_stains_macenko_pca(imNmzd, I_0=255 )
+    I_0 = 255
     stain_color_map = htk.preprocessing.color_deconvolution.stain_color_map
     # specify stains of input image
     stains = ['hematoxylin',  # nuclei stain
               'eosin',        # cytoplasm stain
               'null']    
-    # Perform color deconvolution
     deconv_result = htk.preprocessing.color_deconvolution.color_deconvolution(imInput, w_est, I_0)
 
     imNucleiStain = deconv_result.Stains[:, :, 1]
+    
+    # binary thresholding
     foreground_threshold = intensity
-
     imFgndMask = sp.ndimage.morphology.binary_fill_holes(
         imNucleiStain < foreground_threshold)
 
