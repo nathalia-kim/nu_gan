@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import glob
 import os
 from random import randrange
+import pandas as pd
 
 import numpy as np
 import histomicstk as htk
@@ -219,3 +220,54 @@ def figure_segment_results(positive_npy_root, negative_npy_root):
         ax[i//5, i%5].axis('off')
         ax[i//5, i%5].set_aspect('auto')
     plt.show()
+
+# plot metrics for representation learning 
+def plot_representation(experiment_number):
+    file_path = experiment_root + str(experiment_number) + "/log"
+    
+    log_data  = open(file_path, 'r')
+    split_list = []
+    
+    for line in log_data:
+        # get list of values
+        values = line.split(", ")
+        
+        # get separate values 
+        batch_time = values[0].split(":")[1]
+        gen_iterations = values[1].split(":")[1]
+        D_cost = values[2].split(":")[1]
+        mi_loss = values[3].split(":")[1]
+            
+        split_list.append([float(batch_time), float(gen_iterations), float(D_cost), float(mi_loss)])
+    
+    df = pd.DataFrame(split_list, columns=['batch_time', 'gen_iterations', 'D_cost', 'mi_loss'])
+    
+    # plot loss over gen_iterations
+    df.plot(x="gen_iterations", y="mi_loss", figsize=(6, 4), xlabel="Generator iterations", ylabel="Loss")
+    
+    # get purity and entropy from model files
+    models_path = experiment_root + str(experiment_number) + "/model/"
+    metrics = []
+    
+    for file in glob.glob(models_path + "*"):
+        filename = os.path.basename(file)
+        
+        if "netG" in filename:
+            purity = filename.split("_")[1]
+            entropy = filename.split("_")[2]
+            iteration = filename.split("_")[3]
+            iteration = iteration.replace(".pth",'')
+            
+            metrics.append([float(purity), float(entropy), float(iteration)])
+            
+    metrics = pd.DataFrame(metrics, columns=["purity", "entropy", "iteration"])
+    metrics = metrics.sort_values(by=['iteration'])
+    
+    metrics.plot(x="iteration", y = "purity", figsize=(6, 4), xlabel="Generator iterations", ylabel="Purity")
+    metrics.plot(x="iteration", y = "entropy", figsize=(6, 4), xlabel="Generator iterations", ylabel="Entropy")
+    
+            
+        
+    
+
+    

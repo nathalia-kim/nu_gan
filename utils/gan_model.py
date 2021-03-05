@@ -332,7 +332,7 @@ def create_loader(array, shuffle=False, batchsize=1):
     label = torch.LongTensor(np.zeros((array.shape[0]),dtype=int))
     data = torch.FloatTensor(array)
     dataset = torch.utils.data.TensorDataset(data,label)
-    loader = torch.utils.data.DataLoader(dataset, shuffle=shuffle, batch_size=batchsize, num_workers=2)
+    loader = torch.utils.data.DataLoader(dataset, shuffle=shuffle, batch_size=batchsize, num_workers=0)
     return loader
 
 def create_model(rand=32, dis_category=5, dis=1):
@@ -748,6 +748,8 @@ def train_representation(cell_array, test_array, test_label, netD, netG, netD_D,
     fixed_noise = torch.from_numpy(fix_noise(dis_category=dis_category,rand=rand))
 
     for epoch in range(n_epoch):
+        
+        print("current epoch:", epoch)
 
         dataiter = iter(train_loader)
         i = 0
