@@ -1,27 +1,12 @@
-import os
-from sklearn.datasets import fetch_openml
-import random
 import torch
-import torch.backends.cudnn as cudnn
-import torch.optim as optim
 import torch.utils.data
 import torch.nn as nn
 import torch.nn.parallel
-import torchvision.datasets as dset
-import torchvision.transforms as transforms
-import torchvision.utils as vutils
 from torch.autograd import Variable
-import torch.nn.functional as F
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import cv2
 import numpy as np
 import torchvision.models as models
-from PIL import Image
-import matplotlib.pyplot as plt
-from sklearn.model_selection import KFold
 import time
-
+import torchvision
 from sklearn.metrics import f1_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import precision_score
