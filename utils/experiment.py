@@ -181,7 +181,7 @@ def cell_representation(X_train_path, X_test_path, y_train_path, y_test_path,
     netD, netG, netD_D, netD_Q = create_model(rand=rand, dis_category=dis_category)
     
     # train cell representation
-    netD, netG, netD_D, netD_Q = train_representation(
+    values_D_G, l_q, purities = train_representation(
                          cell_train_set, cell_test_set, cell_test_label, 
                          positive_train_npy, positive_test_npy, negative_train_npy, 
                          negative_test_npy, netD, netG,                      
@@ -190,6 +190,8 @@ def cell_representation(X_train_path, X_test_path, y_train_path, y_test_path,
                          dis_category=dis_category, ld=ld, lg=lg, lq=lq, 
                          save_model_steps=save_model_steps, 
                          image_classification = image_classification)
+    
+    return values_D_G, l_q, purities
     
 def image_classification(positive_images_root, negative_images_root, 
                          positive_npy_root,negative_npy_root, ref_path, intensity, 

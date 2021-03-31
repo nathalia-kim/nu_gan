@@ -837,7 +837,7 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
         learning rate for discriminator network D. The default is 1e-4.
     lg : float, optional
         learning rate for generator network G. The default is 1e-4.
-    lq : flaot, optional
+    lq : float, optional
         learning rate for auxiliary network Q. The default is 1e-4.
     save_model_steps : int, optional
         number of steps to save the model. The default is 100.
@@ -869,10 +869,14 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
     test_label = cell_test_label
 
     if image_classification:
-        positive_train_loader = [create_loader(normalized(n), shuffle=False, batchsize=64) for n in positive_train_npy]
-        positive_test_loader = [create_loader(normalized(n), shuffle=False, batchsize=64) for n in positive_test_npy]
-        negative_train_loader = [create_loader(normalized(n), shuffle=False, batchsize=64) for n in negative_train_npy]
-        negative_test_loader =  [create_loader(normalized(n), shuffle=False, batchsize=64) for n in negative_test_npy]
+        positive_train_loader = [create_loader(
+            normalized(n), shuffle=False, batchsize=64) for n in positive_train_npy]
+        positive_test_loader = [create_loader(
+            normalized(n), shuffle=False, batchsize=64) for n in positive_test_npy]
+        negative_train_loader = [create_loader(
+            normalized(n), shuffle=False, batchsize=64) for n in negative_train_npy]
+        negative_test_loader =  [create_loader(
+            normalized(n), shuffle=False, batchsize=64) for n in negative_test_npy]
     
     # define function to zero the gradients 
     def zero_grad():
@@ -907,7 +911,7 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
     label = torch.FloatTensor(1)
     input, noise, label = input.cuda(), noise.cuda(), label.cuda()
 
-    # initialize discrte variable c and gaussian variable z
+    # initialize discrete variable c and gaussian variable z
     c = torch.randn(batchsize, 10)
     z = torch.randn(batchsize, rand)
     z, c = z.cuda(), c.cuda()
@@ -927,6 +931,10 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
     one, mone = one.cuda(), mone.cuda()
     fixed_noise = torch.from_numpy(fix_noise(dis_category=dis_category, 
                                              rand=rand)).cuda()
+    values_D_G = []
+    purities = []
+    l_q = []
+    best_purity = 0
     end = time.time()
 
     for epoch in range(n_epoch):
@@ -1031,6 +1039,15 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
             errG = netD_D(netD(fake)).mean()
             errG.backward(mone)
             optimizerG.step()
+            
+            # get value function V(D, G)
+            values_D_G.append((errD_real - errG).cpu().detach().numpy())
+            # get purities
+            confusion_matrix = get_matrix(netD, netD_Q, test_loader,
+                                          test_label, dis_category)
+            entropy, purity = compute_purity_entropy(confusion_matrix)
+            f_score = get_f_score(confusion_matrix)
+            purities.append(purity)
 
             for p in netD.parameters(): 
                 p.requires_grad = True 
@@ -1050,6 +1067,7 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
             mi_loss = discrete_lamda * nll_loss
             mi_loss.backward()
             optimizerQ.step()
+            l_q.append(nll_loss)
 
             if gen_iterations % 10 == 0:
 
@@ -1062,6 +1080,25 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
                     
                 # print metrics
                 print('batch_time:{0}, gen_iterations:{1}, D_cost:{2}, mi_loss:{3}'.format(batch_time/10, gen_iterations , -D_cost.data , mi_loss.data))
+                
+                if purity > best_purity:
+                    best_purity = purity
+                    best_entropy = entropy
+                    best_fscore = f_score
+                    
+                    # save best models
+                    torch.save(netD.state_dict(), experiment_root + 
+                           'model/netD_' + str(purity) + '_' + str(entropy)
+                           + '_' + str(gen_iterations) + '.pth')
+                    torch.save(netG.state_dict(), experiment_root + 
+                               'model/netG_' + str(purity) + '_' + str(entropy)
+                               + '_' + str(gen_iterations) + '.pth')
+                    torch.save(netD_D.state_dict(), experiment_root +
+                               'model/netD_D_' + str(purity) + '_' + str(entropy)
+                               + '_' + str(gen_iterations) + '.pth')
+                    torch.save(netD_Q.state_dict(), experiment_root +
+                               'model/netD_Q_' + str(purity) + '_' + str(entropy)
+                               + '_' + str(gen_iterations) + '.pth')
 
 
             if gen_iterations % 100 == 0:
@@ -1098,6 +1135,7 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
             
             # save models 
             if gen_iterations % save_model_steps == 0 :
+                '''
                 torch.save(netD.state_dict(), experiment_root + 
                            'model/netD_' + str(purity) + '_' + str(entropy)
                            + '_' + str(gen_iterations) + '.pth')
@@ -1110,8 +1148,17 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
                 torch.save(netD_Q.state_dict(), experiment_root +
                            'model/netD_Q_' + str(purity) + '_' + str(entropy)
                            + '_' + str(gen_iterations) + '.pth')
+                '''
                 end = time.time()
                 
             gen_iterations += 1
+            
+    # compute confusion matrix, entropy, purity and f-score
+    confusion_matrix = get_matrix(netD, netD_Q, test_loader,
+                                  test_label, dis_category)
+    entropy, purity = compute_purity_entropy(confusion_matrix)
+    f_score = get_f_score(confusion_matrix)
+    print('purity:', purity, 'entropy:', entropy, 'f_score', f_score)
+    print('best purity:', best_purity, 'best entropy:', best_entropy, 'best f_score:', best_fscore)
 
-    return netD, netG, netD_D, netD_Q
+    return values_D_G, l_q, purities

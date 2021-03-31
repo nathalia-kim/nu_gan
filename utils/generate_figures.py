@@ -6,19 +6,15 @@ import os
 from random import randrange
 import pandas as pd
 
-import numpy as np
 import histomicstk as htk
-import numpy as np
 import scipy as sp
 import skimage.io
 import skimage.measure
-from skimage.measure import label
 import skimage.color
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from PIL import Image
-import ctypes
 import imutils
+import torch
+from torch.autograd import Variable
+from gan_model import create_model, normalized, create_loader
 
 experiment_root = '/Users/kim/experiment/'
 output_path = '/Users/kim/Documents/GitHub/nu_gan/figures/'
@@ -265,6 +261,106 @@ def plot_representation(experiment_number):
     
     metrics.plot(x="iteration", y = "purity", figsize=(6, 4), xlabel="Generator iterations", ylabel="Purity")
     metrics.plot(x="iteration", y = "entropy", figsize=(6, 4), xlabel="Generator iterations", ylabel="Entropy")
+    
+def figure_8(X_train_path, X_test_path, experiment_id, experiment_root, netD_fn, netG_fn, netD_Q_fn, netD_D_fn, rand = 32, dis_category = 5):
+    '''
+    Function to generate Figure 8 from the paper: visualization of clustering. Generates predictions for the images from pretrained models and outputs a figure with 5 samples per cluster in each row 
+
+    Parameters
+    ----------
+    X_train_path : str
+        path to .npy file with training data.
+    X_test_path : str
+        path to .npy file with testing data.
+    experiment_id : int
+        id of the experiment / training run to use pretrained models.
+    experiment_root : str
+        path to experiment root.
+    netD_fn : str
+        filename of the pretrained model / state_dict for netD network (.pth file).
+    netG_fn : str
+        filename of the pretrained model / state_dict for netG network (.pth file).
+    netD_Q_fn : str
+        filename of the pretrained model / state_dict for netD_Q network (.pth file).
+    netD_D_fn : str
+        filename of the pretrained model / state_dict for netD_D network (.pth file).
+    rand : int, optional
+        number of gaussian noise variables. The default is 32.
+    dis_category : int, optional
+        number of categories / clusters. The default is 5.
+
+    Returns
+    -------
+    None.
+
+    '''
+
+    model_path = experiment_root + str(experiment_id) + "/model/"
+    
+    # instantiate models 
+    netD, netG, netD_D, netD_Q = create_model(rand=rand, dis_category=dis_category)
+    
+    # load model from pth file 
+    netD.load_state_dict(torch.load(model_path + netD_fn))
+    netG.load_state_dict(torch.load(model_path + netG_fn))
+    netD_D.load_state_dict(torch.load(model_path + netD_D_fn))
+    netD_Q.load_state_dict(torch.load(model_path + netD_Q_fn))
+    
+    # get test data
+    # load training and testing datasets
+    X_train = np.load(X_train_path)
+    X_test = np.load(X_test_path)
+    
+    # create cell training and testing sets 
+    cell_train_set = np.concatenate([X_train, X_test])
+    cell_test_set = cell_train_set
+    
+    test = normalized(cell_test_set)
+    test_loader = create_loader(test, shuffle=False, batchsize=1)
+    
+    # predict labels for images
+    predict = []
+    data_iter = iter(test_loader)
+    
+    for iteration in data_iter:
+        # get image and true label from iterator 
+        img, img_label = iteration
+        # get predictions for each class using auxiliary network Q
+        predict_label = netD_Q(netD(Variable(img.cuda())))
+        predict.append(predict_label.data.cpu().numpy())  
+        
+    predict = np.concatenate(predict)
+    
+    predict_label = []
+        
+    # for all predictions in predict 
+    for index in range(0, predict.shape[0]):
+        # get max of predictions as predict_label
+        predict_label.append(np.argmax(predict[index]))
+        
+    # get number of clusters
+    n_clusters = len(np.unique(predict_label))
+    
+    # get 5 samples for each cluster 
+    samples = []
+    for i in range(0, n_clusters):
+        # get 5 samples for that cluster
+        cluster_samples = cell_test_set[np.array(predict_label)==i][0:5]
+        
+        # add to samples list
+        for j in range(0, len(cluster_samples)):
+            samples.append(cluster_samples[j])
+            
+    # create plot with samples
+    fig, ax = plt.subplots(n_clusters, 5, figsize=(40,30))
+    for i in range(n_clusters*5):
+        img = samples[i]
+        ax[i//5, i%5].imshow(img)
+        ax[i//5, i%5].set_title("cluster" + str(i//5))
+        
+        ax[i//5, i%5].axis('off')
+        ax[i//5, i%5].set_aspect('auto')
+    plt.show()
     
             
         
