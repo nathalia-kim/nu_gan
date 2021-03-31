@@ -15,7 +15,20 @@ plt.rcParams['figure.figsize'] = 15, 15
 plt.rcParams['image.cmap'] = 'gray'
 titlesize = 24
 
+#%% 
+# read image
+image = skimage.io.imread("C:/Users/Kim/Desktop/manual_segmentation_data/manual_segmentation_data/198_crop.png")
+plt.imshow(image)
 
+# read mask 
+mask = skimage.io.imread("C:/Users/Kim/Desktop/manual_segmentation_data/manual_segmentation_data/198_labeled_mask_corrected.png")
+plt.imshow(mask)
+
+image[mask == 1] = [255, 0, 0]
+plt.imshow(image)
+
+
+#%%
 def save_normalized_images(inputImageFile, refImageFile, save_path):
     imInput = skimage.io.imread(inputImageFile)[:, :, :3]
     name = inputImageFile.split('/')[-1].split('.')[0]
