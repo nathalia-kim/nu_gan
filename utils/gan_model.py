@@ -860,13 +860,20 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
     if not image_classification:
         # get augmented rotated images
         train = rotation(cell_train_set)
+        
+    if len(cell_test_label) == 0:
+        labeled = False 
+    else: 
+        labeled = True 
     
     # normalize sets and create loaders 
     train = normalized(train)
     train_loader = create_loader(train, shuffle=True, batchsize=batchsize)
-    test = normalized(cell_test_set)
-    test_loader = create_loader(test, shuffle=False, batchsize=1)
-    test_label = cell_test_label
+    
+    if labeled:
+        test = normalized(cell_test_set)
+        test_loader = create_loader(test, shuffle=False, batchsize=1)
+        test_label = cell_test_label
 
     if image_classification:
         positive_train_loader = [create_loader(
@@ -1042,12 +1049,14 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
             
             # get value function V(D, G)
             values_D_G.append((errD_real - errG).cpu().detach().numpy())
-            # get purities
-            confusion_matrix = get_matrix(netD, netD_Q, test_loader,
+            
+            if labeled:
+                # get purities
+                confusion_matrix = get_matrix(netD, netD_Q, test_loader,
                                           test_label, dis_category)
-            entropy, purity = compute_purity_entropy(confusion_matrix)
-            f_score = get_f_score(confusion_matrix)
-            purities.append(purity)
+                entropy, purity = compute_purity_entropy(confusion_matrix)
+                f_score = get_f_score(confusion_matrix)
+                purities.append(purity)
 
             for p in netD.parameters(): 
                 p.requires_grad = True 
@@ -1081,7 +1090,7 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
                 # print metrics
                 print('batch_time:{0}, gen_iterations:{1}, D_cost:{2}, mi_loss:{3}'.format(batch_time/10, gen_iterations , -D_cost.data , mi_loss.data))
                 
-                if purity > best_purity:
+                if purity > best_purity & labeled:
                     best_purity = purity
                     best_entropy = entropy
                     best_fscore = f_score
@@ -1120,22 +1129,23 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
                                   str(gen_iterations) + '.png', nrow=5, 
                                   normalize=True)
                 
-                # compute confusion matrix, entropy, purity and f-score
-                confusion_matrix = get_matrix(netD, netD_Q, test_loader,
+                if labeled:
+                    # compute confusion matrix, entropy, purity and f-score
+                    confusion_matrix = get_matrix(netD, netD_Q, test_loader,
                                               test_label, dis_category)
-                entropy, purity = compute_purity_entropy(confusion_matrix)
-                f_score = get_f_score(confusion_matrix)
-                print('purity:', purity, 'entropy:', entropy, 'f_score', f_score)
+                    entropy, purity = compute_purity_entropy(confusion_matrix)
+                    f_score = get_f_score(confusion_matrix)
+                    print('purity:', purity, 'entropy:', entropy, 'f_score', f_score)
                 
-                # write to log file 
-                with open(experiment_root + "log","a") as f:
-                    f.write('gen_iterations: ' + str(gen_iterations) + 'purity: ' + 
-                            str(purity) + ' entropy: ' + str(entropy) + ' f_score: ' 
-                            + str(f_score)+ '\n')
+                    # write to log file 
+                    with open(experiment_root + "log","a") as f:
+                        f.write('gen_iterations: ' + str(gen_iterations) + 'purity: ' + 
+                                str(purity) + ' entropy: ' + str(entropy) + ' f_score: ' 
+                                + str(f_score)+ '\n')
             
             # save models 
-            if gen_iterations % save_model_steps == 0 :
-                '''
+            if gen_iterations % save_model_steps == 0 & (not labeled):
+                
                 torch.save(netD.state_dict(), experiment_root + 
                            'model/netD_' + str(purity) + '_' + str(entropy)
                            + '_' + str(gen_iterations) + '.pth')
@@ -1148,17 +1158,18 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
                 torch.save(netD_Q.state_dict(), experiment_root +
                            'model/netD_Q_' + str(purity) + '_' + str(entropy)
                            + '_' + str(gen_iterations) + '.pth')
-                '''
+                
                 end = time.time()
                 
             gen_iterations += 1
-            
-    # compute confusion matrix, entropy, purity and f-score
-    confusion_matrix = get_matrix(netD, netD_Q, test_loader,
+    
+    if labeled: 
+        # compute confusion matrix, entropy, purity and f-score
+        confusion_matrix = get_matrix(netD, netD_Q, test_loader,
                                   test_label, dis_category)
-    entropy, purity = compute_purity_entropy(confusion_matrix)
-    f_score = get_f_score(confusion_matrix)
-    print('purity:', purity, 'entropy:', entropy, 'f_score', f_score)
-    print('best purity:', best_purity, 'best entropy:', best_entropy, 'best f_score:', best_fscore)
+        entropy, purity = compute_purity_entropy(confusion_matrix)
+        f_score = get_f_score(confusion_matrix)
+        print('purity:', purity, 'entropy:', entropy, 'f_score', f_score)
+        print('best purity:', best_purity, 'best entropy:', best_entropy, 'best f_score:', best_fscore)
 
     return values_D_G, l_q, purities

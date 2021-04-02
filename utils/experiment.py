@@ -1,7 +1,7 @@
 import os
 from sklearn.model_selection import KFold
 import numpy as np
-from segmentation_functions import cell_segment
+from segmentation_functions import cell_segment, masks_to_npy
 from gan_model import create_model, rotation, train_representation
 import multiprocessing
 
@@ -193,6 +193,47 @@ def cell_representation(X_train_path, X_test_path, y_train_path, y_test_path,
     
     return values_D_G, l_q, purities
     
+
+def cell_representation_unlabeled(images_path, ref_path, npy_path, experiment_root, n_epoch=50, 
+                                  batchsize=16, rand=32, dis_category=5, ld = 1e-4, lg = 1e-4, 
+                                  lq = 1e-4, save_model_steps=100, image_classification = False):
+    images_path = "/Users/kim/OneDrive - Queen\'s University/Courses/CISC-867 Deep Learning/Project/new dataset/TCGA_data/blca/"
+    ref_path = "/Users/kim/OneDrive - Queen\'s University/Courses/CISC-867 Deep Learning/Project/new dataset/TCGA_data/reference/"
+    npy_path = "/Users/kim/OneDrive - Queen\'s University/Courses/CISC-867 Deep Learning/Project/new dataset/TCGA_data/"
+    experiment_root = "/Users/kim/OneDrive - Queen\'s University/Courses/CISC-867 Deep Learning/Project/"
+    
+    
+    # prep data, generate npy file
+    masks_to_npy(images_path, ref_path, npy_path)
+    
+    # load training data
+    X_train = np.load(npy_path + "Train.npy")
+    
+    # create datasets
+    cell_train_set = X_train
+    cell_test_set = np.array([])
+    cell_test_label = np.array([])
+    
+    # initialize empty npys
+    positive_train_npy = []
+    positive_test_npy = [] 
+    negative_train_npy = [] 
+    negative_test_npy = []
+    
+    # create / initialize the model 
+    netD, netG, netD_D, netD_Q = create_model(rand=rand, dis_category=dis_category)
+    
+    # train cell representation
+    values_D_G, l_q, purities = train_representation(
+                         cell_train_set, cell_test_set, cell_test_label, 
+                         positive_train_npy, positive_test_npy, negative_train_npy, 
+                         negative_test_npy, netD, netG,                      
+                         netD_D, netD_Q, experiment_root, n_epoch=n_epoch, 
+                         batchsize=batchsize, rand=rand, 
+                         dis_category=dis_category, ld=ld, lg=lg, lq=lq, 
+                         save_model_steps=save_model_steps, 
+                         image_classification = image_classification)
+
 def image_classification(positive_images_root, negative_images_root, 
                          positive_npy_root,negative_npy_root, ref_path, intensity, 
                          X_train_path, X_test_path, y_train_path, y_test_path, 
@@ -201,7 +242,7 @@ def image_classification(positive_images_root, negative_images_root,
                          dis_category=5, ld = 1e-4, lg = 1e-4, lq = 1e-4, 
                          save_model_steps = 100, image_classification = True):
     '''
-    Applied cell segmentation to images. Creates and trains model of cell-level visual representation learning. Performs image classification 
+    Applies cell segmentation to images. Creates and trains model of cell-level visual representation learning. Performs image classification 
 
     Parameters
     ----------

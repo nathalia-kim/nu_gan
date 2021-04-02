@@ -10,25 +10,14 @@ import skimage.color
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from PIL import Image
+import glob
+import math
 import ctypes
 plt.rcParams['figure.figsize'] = 15, 15
 plt.rcParams['image.cmap'] = 'gray'
 titlesize = 24
 
-#%% 
-# read image
-image = skimage.io.imread("C:/Users/Kim/Desktop/manual_segmentation_data/manual_segmentation_data/198_crop.png")
-plt.imshow(image)
 
-# read mask 
-mask = skimage.io.imread("C:/Users/Kim/Desktop/manual_segmentation_data/manual_segmentation_data/198_labeled_mask_corrected.png")
-plt.imshow(mask)
-
-image[mask == 1] = [255, 0, 0]
-plt.imshow(image)
-
-
-#%%
 def save_normalized_images(inputImageFile, refImageFile, save_path):
     imInput = skimage.io.imread(inputImageFile)[:, :, :3]
     name = inputImageFile.split('/')[-1].split('.')[0]
@@ -184,6 +173,80 @@ def cell_segment_evaluate(intensity, refImageFile, segmenval_original_path, segm
     print('Fscore:')
     print(Fscore)
 
+def masks_to_npy(images_path, ref_path, output_path):
+    imList = []
+    ids = []
+    
+    # get list of ids for all files
+    for image_path in glob.glob(images_path + "*"):
+        # get image id
+        id = os.path.basename(image_path)[0:os.path.basename(image_path).find("_")]
+        ids.append(id)
+    
+    # get list of unique ids
+    ids = np.array(ids)
+    img_ids = np.unique(ids)
+    
+    for img_id in img_ids:
+        # read image
+        image = skimage.io.imread(images_path + img_id + "_crop.png")
+        # read mask 
+        mask = skimage.io.imread(images_path + img_id +  "_labeled_mask_corrected.png")
+    
+        # apply stain normalization on image 
+        # read reference image 
+        imRef_path = glob.glob(ref_path + "*")
+        imRef = skimage.io.imread(imRef_path[0])
+        # get mean and stddev of reference image in lab space
+        meanRef, stdRef = htk.preprocessing.color_conversion.lab_mean_std(imRef)
+        # perform reinhard color normalization
+        imNorm = htk.preprocessing.color_normalization.reinhard(image, meanRef, stdRef)       
+    
+        # loop through labels in mask, skip label 0 (background)
+        for i in range(1, max(np.unique(mask))+1):
+            single_cell = imNorm.copy()
+            single_cell[mask != i] = [0, 0, 0]
+        
+            # convert to grayscale
+            gray = cv2.cvtColor(single_cell, cv2.COLOR_RGB2GRAY) 
+        
+            # threshold to get just the signature 
+            retval, thresh_gray = cv2.threshold(gray, thresh=10, maxval=255, \
+                                           type=cv2.THRESH_BINARY_INV)
+        
+            # get contours
+            cnts, im = cv2.findContours(thresh_gray,cv2.RETR_LIST, \
+                                           cv2.CHAIN_APPROX_SIMPLE)
+            
+            # get bounding box from contours
+            single_cell[mask != i] = [255, 255, 255]
+            x,y,w,h = cv2.boundingRect(cnts[0])
+        
+            # crop object around bounding box
+            crop = single_cell[y:y+h, x:x+w]
+        
+            # resize singe-cell images to 32x32x3
+            resized = crop.copy()
+            height, width = crop.shape[0], crop.shape[1]
+            if max(height, width) > 32:
+                scale = 32/float(max(height,width))
+                height, width = int(height*scale), int(width*scale)
+                resized = np.array(Image.fromarray(crop).resize((width, height)))
+            
+            height, width = resized.shape[0], resized.shape[1]
+            if min(height, width) < 32:
+                v_pad = 32-height
+                h_pad = 32-width
+                resized = cv2.copyMakeBorder(resized, math.floor(v_pad/2), math.ceil(v_pad/2), math.floor(h_pad/2), math.ceil(h_pad/2), cv2.BORDER_CONSTANT, value=(255,255,255))
+            
+            # add single-cell image to list
+            imList.append(resized)
+    
+    # save image list to npy file 
+    imList = np.array(imList)
+    # save npy
+    np.save(output_path + 'Train.npy', imList)
+    
 
 def cell_segment(image_path, data_saved_path, ref_path, intensity):
     totallabel = 0

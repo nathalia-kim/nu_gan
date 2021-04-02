@@ -14,7 +14,8 @@ if not (opt.task):
     parser.error("specify a task such as '--task cell_representation'")
 
 # for image classification and nuclei segmentation
-experiment_root = 'C:/Users/Kim/OneDrive - Queen\'s University/Courses/CISC-867 Deep Learning/Project/'
+#experiment_root = 'C:/Users/Kim/OneDrive - Queen\'s University/Courses/CISC-867 Deep Learning/Project/'
+experiment_root = "/Users/kim/OneDrive - Queen\'s University/Courses/CISC-867 Deep Learning/Project/"
 positive_images_root = experiment_root + 'experiment/data/original/positive_images/' 
 negative_images_root = experiment_root + 'experiment/data/original/negative_images/' 
 positive_npy_root = experiment_root + 'experiment/data/segmented/positive_npy/'
@@ -36,13 +37,13 @@ if dataset == 'B':
     y_train_path = experiment_root + 'dataset_B/cell_level_label/y_train.npy' 
     y_test_path = experiment_root + 'dataset_B/cell_level_label/y_test.npy'
 
-n_epoch = 100 #50 # number of epochs
+n_epoch = 10 #50 # number of epochs
 batchsize = 10 #10
 rand = 32 # number of gaussian noise variables 
 dis_category = 5 # number of categories / clusters
-ld = 2e-4 # learning rate for discriminator network D
-lg = 2e-4 # learning rate for generator network G
-lq = 2e-4 # learning rate for auxiliary network Q
+ld = 1e-4 # learning rate for discriminator network D
+lg = 1e-4 # learning rate for generator network G
+lq = 1e-4 # learning rate for auxiliary network Q
 random_seed = 42
 save_model_steps = 100 # number of steps to save the model 
 intensity = 160 # intensity for segmentation thresholding 
