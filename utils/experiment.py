@@ -156,7 +156,12 @@ def cell_representation(X_train_path, X_test_path, y_train_path, y_test_path,
 
     Returns
     -------
-    None.
+    values_D_G : list
+        values of function V(D, G) over iterations. Used to evaluate how well the generator distribution matches the real data distribution 
+    l_q : list
+        values of loss function of auxiliary network over iterations.
+    purities: list
+        values of clustering purity over iterations
 
     '''
     
@@ -197,14 +202,49 @@ def cell_representation(X_train_path, X_test_path, y_train_path, y_test_path,
 def cell_representation_unlabeled(images_path, ref_path, npy_path, experiment_root, n_epoch=50, 
                                   batchsize=16, rand=32, dis_category=5, ld = 1e-4, lg = 1e-4, 
                                   lq = 1e-4, save_model_steps=100, image_classification = False):
-    images_path = "/Users/kim/OneDrive - Queen\'s University/Courses/CISC-867 Deep Learning/Project/new dataset/TCGA_data/blca/"
-    ref_path = "/Users/kim/OneDrive - Queen\'s University/Courses/CISC-867 Deep Learning/Project/new dataset/TCGA_data/reference/"
-    npy_path = "/Users/kim/OneDrive - Queen\'s University/Courses/CISC-867 Deep Learning/Project/new dataset/TCGA_data/"
-    experiment_root = "/Users/kim/OneDrive - Queen\'s University/Courses/CISC-867 Deep Learning/Project/"
-    
+    '''
+    Creates and trains model of cell-level visual representation learning with unlabeled data 
+
+    Parameters
+    ----------
+    images_path : str
+        path with images for preping.
+    ref_path : str
+        path with reference image for stain normalization.
+    npy_path : str
+        path to save npy file with single-cell images.
+    experiment_root : str
+        path to experiment root
+    n_epoch : int
+        number of epochs for training. The default is 50.
+    batchsize : int
+        batch size. The default is 16.
+    rand : int
+        number of gaussian noise variables. The default is 32.
+    dis_category : int
+        number of categories / clusters. The default is 5.
+    ld : float
+        learning rate for discriminator network D. The default is 1e-4.
+    lg : float
+        learning rate for generator network G. The default is 1e-4.
+    lq : float
+        learning rate for auxiliary network Q. The default is 1e-4.
+    save_model_steps : int
+        number of steps to save the model. The default is 100.
+    image_classification : bool, optional
+        if the training is for image classification or not. The default is False.
+
+    Returns
+    -------
+    values_D_G : list
+        values of function V(D, G) over iterations. Used to evaluate how well the generator distribution matches the real data distribution 
+    l_q : list
+        values of loss function of auxiliary network over iterations.
+
+    '''
     
     # prep data, generate npy file
-    masks_to_npy(images_path, ref_path, npy_path)
+    #masks_to_npy(images_path, ref_path, npy_path)
     
     # load training data
     X_train = np.load(npy_path + "Train.npy")
@@ -224,7 +264,7 @@ def cell_representation_unlabeled(images_path, ref_path, npy_path, experiment_ro
     netD, netG, netD_D, netD_Q = create_model(rand=rand, dis_category=dis_category)
     
     # train cell representation
-    values_D_G, l_q, purities = train_representation(
+    values_D_G, l_q = train_representation(
                          cell_train_set, cell_test_set, cell_test_label, 
                          positive_train_npy, positive_test_npy, negative_train_npy, 
                          negative_test_npy, netD, netG,                      
@@ -233,6 +273,8 @@ def cell_representation_unlabeled(images_path, ref_path, npy_path, experiment_ro
                          dis_category=dis_category, ld=ld, lg=lg, lq=lq, 
                          save_model_steps=save_model_steps, 
                          image_classification = image_classification)
+    
+    return values_D_G, l_q
 
 def image_classification(positive_images_root, negative_images_root, 
                          positive_npy_root,negative_npy_root, ref_path, intensity, 

@@ -942,6 +942,8 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
     purities = []
     l_q = []
     best_purity = 0
+    purity = 0
+    best_D_G = 10000000
     end = time.time()
 
     for epoch in range(n_epoch):
@@ -1108,6 +1110,27 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
                     torch.save(netD_Q.state_dict(), experiment_root +
                                'model/netD_Q_' + str(purity) + '_' + str(entropy)
                                + '_' + str(gen_iterations) + '.pth')
+                    
+                if not labeled:
+                    if (errD_real - errG).cpu().detach().numpy() < best_D_G:
+                        best_D_G = (errD_real - errG).cpu().detach().numpy()
+                        best_D_G = np.round(best_D_G, 3)
+                        best_l_q = nll_loss.cpu().detach().numpy()
+                        best_l_q = np.round(best_l_q, 3)
+                        
+                        # save best models
+                        torch.save(netD.state_dict(), experiment_root + 
+                               'model/netD_' + str(best_D_G) + '_' + str(best_l_q)
+                               + '_' + str(gen_iterations) + '.pth')
+                        torch.save(netG.state_dict(), experiment_root + 
+                                   'model/netG_' + str(best_D_G) + '_' + str(best_l_q)
+                                   + '_' + str(gen_iterations) + '.pth')
+                        torch.save(netD_D.state_dict(), experiment_root +
+                                   'model/netD_D_' + str(best_D_G) + '_' + str(best_l_q)
+                                   + '_' + str(gen_iterations) + '.pth')
+                        torch.save(netD_Q.state_dict(), experiment_root +
+                                   'model/netD_Q_' + str(best_D_G) + '_' + str(best_l_q)
+                                   + '_' + str(gen_iterations) + '.pth')
 
 
             if gen_iterations % 100 == 0:
@@ -1144,8 +1167,8 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
                                 + str(f_score)+ '\n')
             
             # save models 
-            if gen_iterations % save_model_steps == 0 & (not labeled):
-                
+            if gen_iterations % save_model_steps == 0:
+                '''
                 torch.save(netD.state_dict(), experiment_root + 
                            'model/netD_' + str(purity) + '_' + str(entropy)
                            + '_' + str(gen_iterations) + '.pth')
@@ -1158,8 +1181,9 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
                 torch.save(netD_Q.state_dict(), experiment_root +
                            'model/netD_Q_' + str(purity) + '_' + str(entropy)
                            + '_' + str(gen_iterations) + '.pth')
-                
+                '''
                 end = time.time()
+                
                 
             gen_iterations += 1
     
@@ -1171,5 +1195,9 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
         f_score = get_f_score(confusion_matrix)
         print('purity:', purity, 'entropy:', entropy, 'f_score', f_score)
         print('best purity:', best_purity, 'best entropy:', best_entropy, 'best f_score:', best_fscore)
-
-    return values_D_G, l_q, purities
+           
+        return values_D_G, l_q, purities
+    
+    if not labeled:
+        print('best_D_G:', best_D_G, 'best_l_q:', best_l_q)
+        return values_D_G, l_q
