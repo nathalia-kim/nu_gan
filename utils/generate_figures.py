@@ -16,6 +16,7 @@ import torch
 from torch.autograd import Variable
 from gan_model import create_model, normalized, create_loader
 
+'''
 experiment_root = '/Users/kim/experiment/'
 output_path = '/Users/kim/Documents/GitHub/nu_gan/figures/'
 
@@ -25,10 +26,25 @@ negative_images_root = experiment_root + 'data/original/negative_images/'
 positive_npy_root = experiment_root + 'data/segmented/positive_npy/'
 negative_npy_root = experiment_root + 'data/segmented/negative_npy/'
 ref_path = experiment_root + 'data/original/reference/BM_GRAZ_HE_0007_01.png'
-intensity = 160
-
-# Figure 2: Positive and negative examples of bone marrow images
+intensity = 160'
+'''
+ 
 def figure_2(positive_images_root, negative_images_root):
+    '''
+    Figure 2: Positive and negative examples of bone marrow images
+
+    Parameters
+    ----------
+    positive_images_root : str
+        path to positive images.
+    negative_images_root : str
+        path to negative images.
+
+    Returns
+    -------
+    None.
+
+    '''
     # get positive and negative images from root 
     positives = glob.glob(positive_images_root + "*")
     negatives = glob.glob(negative_images_root + "*")
@@ -53,9 +69,23 @@ def figure_2(positive_images_root, negative_images_root):
     ax2.imshow(negative)
     ax2.set_title('Negative')
 
-# Figure 6: Overview of the segmentation process
-# code mostly from segmentation_functions.cell_segment
+
 def figure_6(positive_images_root, ref_path):
+    '''
+    Figure 6: Overview of the segmentation process
+
+    Parameters
+    ----------
+    positive_images_root : str
+        path to positive images.
+    ref_path : str
+        path to reference image.
+
+    Returns
+    -------
+    None.
+
+    '''
     # take positives as an example
     positives = glob.glob(positive_images_root + "*")
     # get random image
@@ -87,11 +117,7 @@ def figure_6(positive_images_root, ref_path):
     # Perform color deconvolution
     w_est = htk.preprocessing.color_deconvolution.rgb_separate_stains_macenko_pca(imNmzd, I_0=255 )
     I_0 = 255
-    stain_color_map = htk.preprocessing.color_deconvolution.stain_color_map
-    # specify stains of input image
-    stains = ['hematoxylin',  # nuclei stain
-              'eosin',        # cytoplasm stain
-              'null']    
+     
     deconv_result = htk.preprocessing.color_deconvolution.color_deconvolution(imInput, w_est, I_0)
     # get only the nuclei / hematoxylin stain
     imNucleiStain = deconv_result.Stains[:, :, 1]
@@ -136,16 +162,9 @@ def figure_6(positive_images_root, ref_path):
                 imNucleicompact1[ii,jj]=1
 
     imNucleicompact2 = skimage.measure.label(imNucleicompact1,connectivity = 1)
-    imInput2 = np.copy(imNmzd)
     plt.rcParams['figure.figsize'] = 1, 1
 
     # save image and calculate f-score #########
-    listt = []
-    seglis = []
-    list_nuclei = []
-    right = 0
-    segment = 0
-    label = 0
     image = imInput.copy()
     
     for i in range(1,imNucleicompact2.max()):
@@ -186,10 +205,23 @@ def figure_6(positive_images_root, ref_path):
             
     plt.imsave("final_segmentation.png", image)
     
-    
-
-# show segmentation results 
+     
 def figure_segment_results(positive_npy_root, negative_npy_root):
+    '''
+    Show segmentation results
+
+    Parameters
+    ----------
+    positive_npy_root : str
+        path to positive images npy file.
+    negative_npy_root : str
+        path to negative images npy file.
+
+    Returns
+    -------
+    None.
+
+    '''
     # get positive and negative images from root 
     positives = glob.glob(positive_npy_root+str(intensity)+'/' + "*")
     negatives = glob.glob(negative_npy_root+str(intensity)+'/' + "*")
@@ -217,8 +249,20 @@ def figure_segment_results(positive_npy_root, negative_npy_root):
         ax[i//5, i%5].set_aspect('auto')
     plt.show()
 
-# plot metrics for representation learning 
 def plot_representation(experiment_number):
+    '''
+    plot metrics for representation learning 
+
+    Parameters
+    ----------
+    experiment_number : int
+        id of experiment.
+
+    Returns
+    -------
+    None.
+
+    '''
     file_path = experiment_root + str(experiment_number) + "/log"
     
     log_data  = open(file_path, 'r')
@@ -262,7 +306,7 @@ def plot_representation(experiment_number):
     metrics.plot(x="iteration", y = "purity", figsize=(6, 4), xlabel="Generator iterations", ylabel="Purity")
     metrics.plot(x="iteration", y = "entropy", figsize=(6, 4), xlabel="Generator iterations", ylabel="Entropy")
     
-def figure_8(X_train_path, X_test_path, experiment_id, experiment_root, netD_fn, netG_fn, netD_Q_fn, netD_D_fn, rand = 32, dis_category = 5):
+def figure_8(X_train_path, X_test_path, experiment_root, netD_fn="netD_best_model.pth", netG_fn="netG_best_model.pth", netD_Q_fn="netD_Q_best_model.pth", netD_D_fn="netD_D_best_model.pth", rand = 32, dis_category = 5):
     '''
     Function to generate Figure 8 from the paper: visualization of clustering. Generates predictions for the images from pretrained models and outputs a figure with 5 samples per cluster in each row 
 
@@ -272,8 +316,6 @@ def figure_8(X_train_path, X_test_path, experiment_id, experiment_root, netD_fn,
         path to .npy file with training data.
     X_test_path : str
         path to .npy file with testing data.
-    experiment_id : int
-        id of the experiment / training run to use pretrained models.
     experiment_root : str
         path to experiment root.
     netD_fn : str
@@ -295,7 +337,7 @@ def figure_8(X_train_path, X_test_path, experiment_id, experiment_root, netD_fn,
 
     '''
 
-    model_path = experiment_root + str(experiment_id) + "/model/"
+    model_path = experiment_root + "/model/"
     
     # instantiate models 
     netD, netG, netD_D, netD_Q = create_model(rand=rand, dis_category=dis_category)
@@ -343,7 +385,7 @@ def figure_8(X_train_path, X_test_path, experiment_id, experiment_root, netD_fn,
     
     # get 5 samples for each cluster 
     samples = []
-    for i in range(0, n_clusters):
+    for i in np.unique(predict_label):
         # get 5 samples for that cluster
         cluster_samples = cell_test_set[np.array(predict_label)==i][0:5]
         
@@ -360,10 +402,8 @@ def figure_8(X_train_path, X_test_path, experiment_id, experiment_root, netD_fn,
         
         ax[i//5, i%5].axis('off')
         ax[i//5, i%5].set_aspect('auto')
-    plt.show()
+    #plt.show()
+    plt.savefig(experiment_root + "figure8.png")
     
-            
-        
     
-
     

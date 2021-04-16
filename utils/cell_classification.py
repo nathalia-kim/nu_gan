@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 
 
-def cell_classification(experiment_id, experiment_root, X_train_path, X_test_path, y_train_path, y_test_path, netD_fn, max_iter=3000, rand=32, dis_category=5):
+def cell_classification(experiment_id, experiment_root, X_train_path, X_test_path, y_train_path, y_test_path, max_iter=3000, rand=32, dis_category=5, netD_fn="netD_best_model.pth"):
     '''
     Performs cell classification using trained model as feature extractor and L2-SVM as classifier
 

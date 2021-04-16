@@ -2,23 +2,38 @@ import os
 import cv2
 import numpy as np
 import histomicstk as htk
-import numpy as np
 import scipy as sp
 import skimage.io
 import skimage.measure
 import skimage.color
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 from PIL import Image
 import glob
 import math
-import ctypes
 plt.rcParams['figure.figsize'] = 15, 15
 plt.rcParams['image.cmap'] = 'gray'
 titlesize = 24
 
 
 def save_normalized_images(inputImageFile, refImageFile, save_path):
+    '''
+    Performs stain normalization and saves resulting image 
+
+    Parameters
+    ----------
+    inputImageFile : str
+        path to input image.
+    refImageFile : str
+        path to reference image.
+    save_path : str
+        path to save resulting image.
+
+    Returns
+    -------
+    image : array
+        array of resulting normalized image.
+
+    '''
     imInput = skimage.io.imread(inputImageFile)[:, :, :3]
     name = inputImageFile.split('/')[-1].split('.')[0]
     imReference = skimage.io.imread(refImageFile)[:, :, :3]
@@ -32,6 +47,25 @@ def save_normalized_images(inputImageFile, refImageFile, save_path):
 
 
 def cell_segment_evaluate(intensity, refImageFile, segmenval_original_path, segmenval_label_path):
+    '''
+    Evaluate cell segmentation, compute f-score, precision and recall
+
+    Parameters
+    ----------
+    intensity : int
+        intensity fior image thresholding.
+    refImageFile : str
+        path to reference image.
+    segmenval_original_path : str
+        path to original images.
+    segmenval_label_path : str
+        path to image labels.
+
+    Returns
+    -------
+    None.
+
+    '''
     totallabel  =0
     totalsegment  = 0
     totalright  = 0
@@ -40,7 +74,7 @@ def cell_segment_evaluate(intensity, refImageFile, segmenval_original_path, segm
     for imdata in range(0,len(imList)):
 
         inputImageFile = (segmenval_original_path + imList[imdata])
-        #inputImageFile = ('/disk1/cell_work/data/new/20171005091629.jpg')  # Easy1.png
+
         name =  imList[imdata].strip('.png')
         imInput = skimage.io.imread(inputImageFile)[:, :, :3]
         imReference = skimage.io.imread(refImageFile)[:, :, :3]
@@ -60,9 +94,7 @@ def cell_segment_evaluate(intensity, refImageFile, segmenval_original_path, segm
         deconv_result = htk.preprocessing.color_deconvolution.color_deconvolution(imInput, w_est, I_0)
 
         imNucleiStain = deconv_result.Stains[:, :, 1]
-        #plt.figure()
-        #plt.imshow(imNucleiStain)
-        #imNucleiStain =imDeconvolved[:, :, 0]
+
         foreground_threshold = intensity
 
         imFgndMask = sp.ndimage.morphology.binary_fill_holes(
@@ -149,14 +181,11 @@ def cell_segment_evaluate(intensity, refImageFile, segmenval_original_path, segm
                                 right= result.sum()/255 + right
                                 segment = kk.sum() + segment
                                 
-    # calculate the number of pixel in ground truth, segmentation result and overlapping region
+        # calculate the number of pixel in ground truth, segmentation result and overlapping region
         label= 0
         for im in labelist:
             label = label+ im.sum()/255
 
-        #print (label)              
-        #print(segment)
-        #print(right)
         totallabel  =label+totallabel
         totalsegment  = segment+totalsegment
         totalright  = right+totalright
@@ -164,16 +193,34 @@ def cell_segment_evaluate(intensity, refImageFile, segmenval_original_path, segm
     a=totallabel
     b=totalsegment
     c=totalright
+    
     # calculate f-score
     recall = c/a
     precision = c/float(b)
     Fscore=(2*precision*recall)/(precision+recall)
-    print('recall,precision:')
-    print(recall,precision)
+    print('recall, precision:')
+    print(recall, precision)
     print('Fscore:')
     print(Fscore)
 
 def masks_to_npy(images_path, ref_path, output_path):
+    '''
+    Generate npy file with segmented image from binary masks
+
+    Parameters
+    ----------
+    images_path : str
+        path to images.
+    ref_path : str
+        path to reference image.
+    output_path : str
+        path to save the output npy file.
+
+    Returns
+    -------
+    None.
+
+    '''
     imList = []
     ids = []
     
@@ -249,16 +296,28 @@ def masks_to_npy(images_path, ref_path, output_path):
     
 
 def cell_segment(image_path, data_saved_path, ref_path, intensity):
-    totallabel = 0
-    totalsegment  = 0
-    totalright  = 0
+    '''
+    Perform cell segmentation on images
+
+    Parameters
+    ----------
+    image_path : str
+        path with images.
+    data_saved_path : str
+        path to save the result.
+    ref_path : str
+        path with reference image.
+    intensity : int
+        intensity for image thresholding.
+
+    Returns
+    -------
+    None.
+
+    '''
 
     plt.rcParams['figure.figsize'] = 15, 15
     plt.rcParams['image.cmap'] = 'gray'
-    titlesize = 24
-
-    classification1 = []
-    totalseg = []
     
     # get image id / name 
     name = image_path.split('/')[-1].split('/')[-1].split('.')[0]
@@ -279,12 +338,7 @@ def cell_segment(image_path, data_saved_path, ref_path, intensity):
 
     # Perform color deconvolution
     w_est = htk.preprocessing.color_deconvolution.rgb_separate_stains_macenko_pca(imNmzd, I_0=255 )
-    I_0 = 255
-    stain_color_map = htk.preprocessing.color_deconvolution.stain_color_map
-    # specify stains of input image
-    stains = ['hematoxylin',  # nuclei stain
-              'eosin',        # cytoplasm stain
-              'null']    
+    I_0 = 255    
     deconv_result = htk.preprocessing.color_deconvolution.color_deconvolution(imInput, w_est, I_0)
 
     imNucleiStain = deconv_result.Stains[:, :, 1]
@@ -323,16 +377,14 @@ def cell_segment(image_path, data_saved_path, ref_path, intensity):
                 imNucleicompact1[ii,jj]=1
 
     imNucleicompact2 = skimage.measure.label(imNucleicompact1,connectivity = 1)
-    imInput2 = np.copy(imNmzd)
+
     plt.rcParams['figure.figsize'] = 1, 1
 
-############## save image and calculate f-score #########
+    # save image and calculate f-score 
     listt = []
     seglis = []
     list_nuclei = []
-    right = 0
-    segment = 0
-    label = 0
+
     for i in range(1,imNucleicompact2.max()):
 
         k =  (imNucleicompact2==i)
