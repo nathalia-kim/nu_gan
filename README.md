@@ -15,35 +15,35 @@ pip install -r requirements.txt
 
 To download datasets: 
 
-Extract all data to desired path: [Datasets](https://queensuca-my.sharepoint.com/:f:/g/personal/19nyk1_queensu_ca/EuoCEg-JUB9AuqkHWoh8WLQBDWGf3cnJLKzBJGsTkLpqsw?e=inwedL)
+* Extract all data to desired path: [Datasets](https://queensuca-my.sharepoint.com/:f:/g/personal/19nyk1_queensu_ca/EuoCEg-JUB9AuqkHWoh8WLQBDWGf3cnJLKzBJGsTkLpqsw?e=inwedL)
 
 ## Training
 
 To train the model(s) in the paper, separate tasks can be chosen using flags.
 
-* Unsupervised Cell-level Clustering on labeled dataset:
+### Unsupervised Cell-level Clustering on labeled dataset:
 ```train
 python /path_to_utils/nu_gan.py --task 'cell_representation'
 ```
 
-> To change the number of clusters:
+* To change the number of clusters:
 ```train
 python /path_to_utils/nu_gan.py --task 'cell_representation' --dis_category 4
 ```
 The default number of clusters (`dis_category` is 5). 
 
-* Unsupervised Cell-level Clustering on unlabeled dataset:
+### Unsupervised Cell-level Clustering on unlabeled dataset:
 ```train
 python /path_to_utils/nu_gan.py --task 'cell_representation_unlabeled'
 ```
 
-> To change the number of clusters:
+* To change the number of clusters:
 ```train
 python /path_to_utils/nu_gan.py --task 'cell_representation_unlabeled' --dis_category 4
 ```
 The default number of clusters (`dis_category` is 5). 
 
-* Cell Classification:
+### Cell Classification:
 ```train
 python /path_to_utils/nu_gan.py --task 'cell_classification' --experiment_id 123456
 ```
