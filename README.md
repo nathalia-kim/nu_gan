@@ -17,6 +17,8 @@ To download datasets:
 
 * Extract all data to desired path: [Datasets](https://queensuca-my.sharepoint.com/:f:/g/personal/19nyk1_queensu_ca/EuoCEg-JUB9AuqkHWoh8WLQBDWGf3cnJLKzBJGsTkLpqsw?e=inwedL)
 
+Dataset A is a labeled dataset, new dataset is unlabeled. 
+
 ## Training
 
 To train the model(s) in the paper, separate tasks can be chosen using flags.
@@ -30,7 +32,7 @@ python /path_to_utils/nu_gan.py --task 'cell_representation'
 ```train
 python /path_to_utils/nu_gan.py --task 'cell_representation' --dis_category 4
 ```
-The default number of clusters (`dis_category` is 5). 
+The default number of clusters (`dis_category`) is 5. 
 
 ### Unsupervised Cell-level Clustering on unlabeled dataset:
 ```train
@@ -41,7 +43,7 @@ python /path_to_utils/nu_gan.py --task 'cell_representation_unlabeled'
 ```train
 python /path_to_utils/nu_gan.py --task 'cell_representation_unlabeled' --dis_category 4
 ```
-The default number of clusters (`dis_category` is 5). 
+The default number of clusters (`dis_category`) is 5. 
 
 ### Cell Classification:
 ```train
@@ -54,35 +56,41 @@ Other hyperparameters that don't have specified flags can be changed in `nu_gan.
 
 ## Evaluation
 
-To evaluate my model, run:
+To evaluate the model on labeled data:
 
 ```eval
-python eval.py --model-file mymodel.pth --benchmark imagenet
+python /path_to_utils/eval.py --model_path "path_to_models" --dis_category 5
 ```
 
->📋  Describe how to evaluate the trained models on benchmarks reported in the paper, give commands that produce the results (section below).
+The default number of clusters (`dis_category`) is 5. 
 
 ## Pre-trained Models
 
 You can download pretrained models here:
 
-- [My awesome model](https://drive.google.com/mymodel.pth) trained on ImageNet using parameters x,y,z. 
-
->📋  Give a link to where/how the pretrained models can be downloaded and how they were trained (if applicable).  Alternatively you can have an additional column in your results table with a link to the models.
+- [Unsupervised Cell-level Clustering on labeled dataset](https://queensuca-my.sharepoint.com/:f:/g/personal/19nyk1_queensu_ca/EqGlvyQmEPFHtupKWOExlMMBy7XFn075GPAoqu9yvqBYaA?e=lTlKL8) trained on the labeled Dataset A. 
+- [Unsupervised Cell-level Clustering on unlabeled dataset](https://queensuca-my.sharepoint.com/:f:/g/personal/19nyk1_queensu_ca/EpWxSHIduaNOsPusqVZy9TEB0QCeXwnytO4nRzDy0RSPCg?e=h5hdCl) trained on the unlabeled new dataset. 
 
 ## Results
 
 Our model achieves the following performance on :
 
-### [Image Classification on ImageNet](https://paperswithcode.com/sota/image-classification-on-imagenet)
+### Unsupervised Cell-level Clustering on labeled dataset
 
-| Model name         | Top 1 Accuracy  | Top 5 Accuracy |
-| ------------------ |---------------- | -------------- |
-| My awesome model   |     85%         |      95%       |
+|          | Purity  | Entropy | F-score |
+| ------------------ |---------------- | -------------- | -------------- |
+| Reproduction   |     0.803         |      0.914      |      0.810      |
 
->📋  Include a table of results from your paper, and link back to the leaderboard for clarity and context. If your main result is a figure, include that figure and link to the command or notebook to reproduce it. 
+### Unsupervised Cell-level Clustering on unlabeled dataset
 
+|    Clusters      |  V(D, G) | Lq | 
+| ------------------ |---------------- | -------------- | 
+| 5   |     -6.08         |      0.031      |  
+
+Where V(D, G) is the value function of the discriminator and generator networks and Lq is the loss of the auxiliary network. 
 
 ## Contributing
 
->📋  Pick a licence and describe how to contribute to your code repository. 
+If you'd like to contribute, or have any suggestions, you can contact us at nathalia.yun@gmail.com or open an issue on this GitHub repository.
+
+All contributions welcome! All content in this repository is licensed under the MIT license.
