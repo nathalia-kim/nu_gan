@@ -81,6 +81,8 @@ Our model achieves the following performance on :
 | ------------------ |---------------- | -------------- | -------------- |
 | Reproduction   |     0.803         |      0.914      |      0.810      |
 
+![datasetA_plot](/datasetA_plot.png)
+
 ### Unsupervised Cell-level Clustering on unlabeled dataset
 
 |    Clusters      |  V(D, G) | Lq | 
@@ -88,6 +90,8 @@ Our model achieves the following performance on :
 | 5   |     -6.08         |      0.031      |  
 
 Where V(D, G) is the value function of the discriminator and generator networks and Lq is the loss of the auxiliary network. 
+
+<img src=/new_dataset_plot.png width="700" height="350">
 
 ## Contributing
 
