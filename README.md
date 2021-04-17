@@ -91,7 +91,7 @@ Our model achieves the following performance on :
 
 Where V(D, G) is the value function of the discriminator and generator networks and Lq is the loss of the auxiliary network. 
 
-<img src=/new_dataset_plot.png width="700" height="350">
+<img src=/new_dataset_plot.png width="580" height="270">
 
 ## Contributing
 
