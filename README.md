@@ -1,9 +1,9 @@
-## nu_gan
+# Reproducibility study: Unsupervised Learning for Cell-Level Visual Representation in Histopathology Images With Generative Adversarial Networks
 
-This repository contains the Python implementation for our paper *Unsupervised Learning for Cell-level Visual Representation in Histopathology Images with Generative Adversarial Networks*, 
+This repository contains the implementation of our reproducibility study of the paper *Unsupervised Learning for Cell-level Visual Representation in Histopathology Images with Generative Adversarial Networks*, 
 Bo Hu♯ , Ye Tang♯ , Eric I-Chao Chang, Yubo Fan, Maode Lai and Yan Xu*  (* corresponding author; ♯ equal contribution), [arxiv](https://arxiv.org/abs/1711.11317), [IEEE](https://ieeexplore.ieee.org/document/8402089)
 
-Specially thanks for the open source codes shared by [*caogang/wgan-gp*](https://github.com/caogang/wgan-gp) and [*DigitalSlideArchive/HistomicsTK*](https://github.com/DigitalSlideArchive/HistomicsTK)
+Original paper's code can be found on [*nu-gan*](https://github.com/bohu615/nu_gan)
 
 ### Requirements
 
