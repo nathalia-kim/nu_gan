@@ -43,7 +43,7 @@ def cell_classification(experiment_id, experiment_root, X_train_path, X_test_pat
 
     '''
      
-    model_path = experiment_root + str(experiment_id) + "/model/"
+    model_path = experiment_root + "/" + str(experiment_id) + "/model/"
         
     # instantiate models 
     netD, netG, netD_D, netD_Q = create_model(rand=rand, dis_category=dis_category)
@@ -101,12 +101,22 @@ def cell_classification(experiment_id, experiment_root, X_train_path, X_test_pat
     features = features.reshape((len(data), 
                                  features.shape[1]*features.shape[2]*features.shape[3]))
     
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    scaler.fit(features)
+    features = scaler.transform(features)
+        
+    print("Extracting features done")
+    
     # split data 
     X_train, X_test, y_train, y_test = train_test_split(features, data_labels, test_size=0.2, random_state=42)
     
     # create classifier
-    clf = svm.LinearSVC(penalty='l2', max_iter=max_iter)
+    clf = svm.LinearSVC(C=1.0, penalty="l2", max_iter=max_iter, dual=False)
+    
+    print("Fitting the model...")
     clf.fit(X_train, y_train)
+    print("Done")
     
     # predict
     yhat_test = clf.predict(X_test)

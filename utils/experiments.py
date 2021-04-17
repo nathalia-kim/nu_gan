@@ -268,7 +268,8 @@ def cell_representation(X_train_path, X_test_path, y_train_path, y_test_path,
     eval_plots(values_D_G, l_q_np, purities, experiment_root)
     
     # view resulting representations
-    figure_8(X_train_path, X_test_path, experiment_root)
+    model_path = experiment_root + "/model/"
+    figure_8(X_train_path, X_test_path, model_path, output_dir=experiment_root)
     
     return values_D_G, l_q_np, purities
     
@@ -359,6 +360,11 @@ def cell_representation_unlabeled(images_path, ref_path, npy_path, experiment_ro
     
     # save evaluation plots
     eval_plots(values_D_G, l_q_np, [], experiment_root)
+    
+    X_train_path = npy_path + "Train.npy"
+    X_test_path = None
+    model_path = experiment_root + "/model/"
+    figure_8(X_train_path, X_test_path, model_path, rand = rand, dis_category = dis_category, output_dir=experiment_root)
     
     return values_D_G, l_q_np
 
@@ -487,6 +493,7 @@ def image_classification(positive_images_root, negative_images_root,
     eval_plots(values_D_G, l_q_np, purities, experiment_root)
     
     # view resulting representations
-    figure_8(X_train_path, X_test_path, experiment_root)
+    model_path = experiment_root + "/model/"
+    figure_8(X_train_path, X_test_path, model_path, output_dir=experiment_root)
     
     return values_D_G, l_q_np, purities

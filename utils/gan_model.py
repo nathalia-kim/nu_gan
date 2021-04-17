@@ -1256,7 +1256,7 @@ def train_representation(cell_train_set, cell_test_set, cell_test_label,
                                 + str(f_score)+ '\n')
             
             # save models 
-            if gen_iterations % save_model_steps == 0:
+            if (gen_iterations % save_model_steps == 0) & labeled:
                 torch.save(netD.state_dict(), experiment_root + 
                            'model/netD_' + str(purity) + '_' + str(entropy)
                            + '_' + str(gen_iterations) + '.pth')

@@ -287,7 +287,8 @@ def masks_to_npy(images_path, ref_path, output_path):
                 resized = cv2.copyMakeBorder(resized, math.floor(v_pad/2), math.ceil(v_pad/2), math.floor(h_pad/2), math.ceil(h_pad/2), cv2.BORDER_CONSTANT, value=(255,255,255))
             
             # add single-cell image to list
-            imList.append(resized)
+            if len(np.unique(resized)) > 1:
+                imList.append(resized)
     
     # save image list to npy file 
     imList = np.array(imList)
