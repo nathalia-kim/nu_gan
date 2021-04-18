@@ -29,7 +29,7 @@ Dataset A is a labeled dataset, new dataset is unlabeled.
 
 ## Training
 
-To train the model(s) in the paper, separate tasks can be chosen using flags.
+To train the model(s) in the paper, separate tasks can be chosen using flags. Make sure the datasets are extracted in the current directory: `cd path_to_datasets`
 
 ### Unsupervised Cell-level Clustering on labeled dataset:
 ```train
