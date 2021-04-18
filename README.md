@@ -54,6 +54,9 @@ python /path_to_utils/nu_gan.py --task 'cell_representation_unlabeled' --dis_cat
 The default number of clusters (`dis_category`) is 5. 
 
 ### Cell Classification:
+
+Make sure the current directory has the experiment folders: `cd path_to_experiments`. 
+
 ```train
 python /path_to_utils/nu_gan.py --task 'cell_classification' --experiment_id 123456
 ```
