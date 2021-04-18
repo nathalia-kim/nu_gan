@@ -9,7 +9,15 @@ Original paper's code can be found on [*nu-gan*](https://github.com/bohu615/nu_g
 
 To install requirements:
 
-```setup
+```bash
+conda create -n myenv python=3.8.5
+conda activate myenv
+
+conda install -c anaconda pip
+
+# install PyTorch - https://pytorch.org/get-started/locally/
+conda install pytorch==1.6.0 torchvision==0.7.0 cudatoolkit=10.1 -c pytorch
+
 pip install -r requirements.txt
 ```
 
