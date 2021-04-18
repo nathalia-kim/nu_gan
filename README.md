@@ -104,6 +104,12 @@ Where V(D, G) is the value function of the discriminator and generator networks 
 
 <img src=/new_dataset_plot.png width="580" height="270">
 
+### Cell Classification
+
+|    Precision      |  Recall | F-score | 
+| ------------------ |---------------- | -------------- | 
+| 0.908   |     0.895         |      0.899      |  
+
 ## Contributing
 
 If you'd like to contribute, or have any suggestions, you can contact us at nathalia.yun@gmail.com or open an issue on this GitHub repository.
